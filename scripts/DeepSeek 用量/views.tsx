@@ -13,35 +13,25 @@ function gradient(from: string, to: string) {
 }
 
 const color = {
-  background: { light: gradient("#F9FAFF", "#E9EEFC"), dark: gradient("#172542", "#10192C") },
-  blue: { light: gradient("#F0F5FF", "#CBDCFF"), dark: gradient("#243B96", "#101E4B") },
-  primary: { light: "#182645", dark: "#F4F7FF" },
-  secondary: { light: "#516285", dark: "#B7C5E3" },
-  accent: { light: "#2448C8", dark: "#B3C7FF" },
-  violet: { light: "#6E3BB4", dark: "#DBC0FF" },
-  panel: { light: "#FFFFFF", dark: "#223251" },
-  subtle: { light: "#DFE7FC", dark: "#263759" },
-  rule: { light: "#D4DEF4", dark: "#354667" },
-  logo: { light: "#E9EEFF", dark: "#E3EBFF" },
-  success: { light: "#0C6A54", dark: "#86E1C3" },
-  warning: { light: "#95501B", dark: "#FFCB91" },
-}
-
-const onBlue = {
+  background: { light: gradient("#F0F5FF", "#CBDCFF"), dark: gradient("#243B96", "#101E4B") },
   primary: { light: "#15254D", dark: "#FFFFFF" },
   secondary: { light: "#455A86", dark: "#D4DFFF" },
   accent: { light: "#2447B7", dark: "#D1DFFF" },
-  rule: { light: "#A9BDE7", dark: "rgba(216,228,255,0.32)" },
+  violet: { light: "#6E3BB4", dark: "#DBC0FF" },
   success: { light: "#14624F", dark: "#A4F2D2" },
   warning: { light: "#8B4A16", dark: "#FFDB9F" },
+  panel: { light: "rgba(255,255,255,0.48)", dark: "rgba(190,210,255,0.12)" },
+  subtle: { light: "rgba(43,79,170,0.09)", dark: "rgba(190,210,255,0.16)" },
+  rule: { light: "#A9BDE7", dark: "rgba(216,228,255,0.32)" },
+  logo: { light: "#E9EEFF", dark: "#E3EBFF" },
 }
 
-function surface(style: typeof color.panel | typeof color.blue, cornerRadius: number) {
+function surface(style: typeof color.panel, cornerRadius: number) {
   return { style, shape: { type: "rect" as const, cornerRadius } }
 }
 
-function Rule({ width, onBlueBackground = false }: { width: number; onBlueBackground?: boolean }) {
-  return <RoundedRectangle cornerRadius={0} fill={onBlueBackground ? onBlue.rule : color.rule}
+function Rule({ width }: { width: number }) {
+  return <RoundedRectangle cornerRadius={0} fill={color.rule}
     frame={{ width, height: 1 }} />
 }
 
@@ -56,7 +46,7 @@ function Header({ currency, small, period, detail, alert = false, compact = fals
         widgetAccentedRenderingMode="fullColor" frame={{ width: compact ? 17 : 21, height: compact ? 13 : 16 }} />
     </ZStack>
     <Text font={compact ? 14 : 15} fontWeight="bold" lineLimit={1}
-      foregroundStyle={small ? onBlue.primary : color.primary}>DeepSeek</Text>
+      foregroundStyle={color.primary}>DeepSeek</Text>
     <Spacer />
     {detail ? <Text font={9} foregroundStyle={alert ? color.warning : color.secondary}
       lineLimit={1} minScaleFactor={0.8} monospacedDigit>{detail}</Text> : null}
@@ -65,21 +55,21 @@ function Header({ currency, small, period, detail, alert = false, compact = fals
   </HStack>
 }
 
-function Amount({ balance, label, width, large = false, blue = false }: {
-  balance?: Balance; label?: string; width: number; large?: boolean; blue?: boolean
+function Amount({ balance, label, width, large = false }: {
+  balance?: Balance; label?: string; width: number; large?: boolean
 }) {
   const value = balance ? widgetAmount(balance.total) : "—"
   const valueWidth = width - (balance ? 21 : 0)
   const font = Math.min(large ? 49 : 35, Math.max(21, Math.floor(valueWidth / (value.length * 0.61))))
   const height = large ? 55 : 38
   return <VStack alignment="leading" spacing={1} frame={{ width, alignment: "leading" }}>
-    {label ? <Text font={12} fontWeight="medium" foregroundStyle={blue ? onBlue.secondary : color.secondary} lineLimit={1}
+    {label ? <Text font={12} fontWeight="medium" foregroundStyle={color.secondary} lineLimit={1}
       frame={{ width, height: 16, alignment: "leading" }}>{label}</Text> : null}
     <HStack alignment="firstTextBaseline" spacing={5} frame={{ width, height, alignment: "leading" }}>
-      {balance ? <Text font={large ? 20 : 15} fontWeight="semibold" foregroundStyle={blue ? onBlue.accent : color.accent}
+      {balance ? <Text font={large ? 20 : 15} fontWeight="semibold" foregroundStyle={color.accent}
         frame={{ width: 16, alignment: "leading" }}>{mark(balance.currency)}</Text> : null}
       <Text font={font} fontWeight="bold" fontDesign="rounded" monospacedDigit lineLimit={1} minScaleFactor={0.85}
-        foregroundStyle={blue ? onBlue.primary : color.primary} fixedSize={{ horizontal: false, vertical: true }}
+        foregroundStyle={color.primary} fixedSize={{ horizontal: false, vertical: true }}
         frame={{ width: valueWidth, alignment: "leading" }}>{value}</Text>
     </HStack>
   </VStack>
@@ -89,16 +79,15 @@ function Footer({ view, small, now, width }: { view: BalanceView; small: boolean
   const latest = view.latest
   if (!latest) return null
   const stale = !!view.issue || now - latest.at > REFRESH_INTERVAL * 2
-  const theme = small ? onBlue : color
   const status = stale ? "缓存" : latest.available ? "余额可用" : "余额不可用"
-  const statusColor = stale || !latest.available ? theme.warning : theme.success
+  const statusColor = stale || !latest.available ? color.warning : color.success
   return <VStack spacing={4}>
-    <Rule width={width} onBlueBackground={small} />
+    <Rule width={width} />
     <HStack spacing={4} frame={{ width, height: 15 }}>
       <Circle fill={statusColor} frame={{ width: 4, height: 4 }} />
       <Text font={11} fontWeight="medium" lineLimit={1} foregroundStyle={statusColor}>{status}</Text>
       <Spacer />
-      <Text font={11} foregroundStyle={theme.secondary} lineLimit={1} monospacedDigit>
+      <Text font={11} foregroundStyle={color.secondary} lineLimit={1} monospacedDigit>
         {stamp(latest.at, small && !stale)}
       </Text>
     </HStack>
@@ -178,10 +167,10 @@ function PlatformWidget({ platform, selection, family, width, now }: {
       frame={{ width: walletLabel ? Math.floor(walletWidth * 0.62) : walletWidth, alignment: "leading" }}>{walletText}</Text>
     {walletLabel ? <>
       <Spacer />
-      <Text font={large ? 11 : 10} foregroundStyle={large ? onBlue.secondary : color.secondary} lineLimit={1}>{walletLabel}</Text>
+      <Text font={large ? 11 : 10} foregroundStyle={color.secondary} lineLimit={1}>{walletLabel}</Text>
     </> : null}
   </HStack>
-  return <VStack spacing={0} widgetBackground={small ? color.blue : color.background} foregroundStyle={color.primary}
+  return <VStack spacing={0} widgetBackground={color.background} foregroundStyle={color.primary}
     widgetURL={managementURL} frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
     <VStack alignment="leading" spacing={sectionSpacing}
       padding={{ horizontal: inset, vertical: small ? 12 : large ? 14 : 8 }}
@@ -190,23 +179,22 @@ function PlatformWidget({ platform, selection, family, width, now }: {
         detail={!small && hasData ? headerDetail : undefined} alert={!!status} />
       {!hasData ? <>
         <Spacer />
-        <Text font={13} foregroundStyle={small ? onBlue.primary : color.primary} lineLimit={2}>{issueLabel}</Text>
+        <Text font={13} foregroundStyle={color.primary} lineLimit={2}>{issueLabel}</Text>
         <Spacer />
       </> : small ? <>
         <Spacer />
-        <Amount balance={balance} label={walletLabel} width={content} blue />
-        <Rule width={content} onBlueBackground />
+        <Amount balance={balance} label={walletLabel} width={content} />
+        <Rule width={content} />
         <HStack spacing={3} frame={{ width: content, height: 16 }}>
-          <Text font={10} foregroundStyle={onBlue.secondary}>月费用</Text>
+          <Text font={10} foregroundStyle={color.secondary}>月费用</Text>
           <Spacer />
-          <Text font={12} fontWeight="semibold" foregroundStyle={onBlue.primary} lineLimit={1} minScaleFactor={0.75}>
+          <Text font={12} fontWeight="semibold" foregroundStyle={color.primary} lineLimit={1} minScaleFactor={0.75}>
             {costText(costs, costCurrency, 4)}
           </Text>
         </HStack>
-        <Text font={9} foregroundStyle={status ? onBlue.warning : onBlue.secondary} lineLimit={1}>{status ?? hour}</Text>
+        <Text font={9} foregroundStyle={status ? color.warning : color.secondary} lineLimit={1}>{status ?? hour}</Text>
       </> : <>
-        {large ? <VStack spacing={0} padding={{ horizontal: 13 }} background={surface(color.blue, 13)}
-          foregroundStyle={onBlue.primary}>{balanceRow}</VStack> : balanceRow}
+        {large ? <VStack spacing={0} padding={{ horizontal: 13 }} background={surface(color.panel, 13)}>{balanceRow}</VStack> : balanceRow}
         <VStack alignment="leading" spacing={8}>
           {tileRows.map((row, rowIndex) => <HStack key={rowIndex} spacing={gap}>
             {row.map((tile, i) => <Metric key={tile.title} title={tile.title} value={tile.value} tone={tile.tone}
@@ -243,17 +231,17 @@ export function DeepSeekWidget({ view, platform, selection, family, width, now }
   let summary
   if (!latest) {
     summary = <Text font={small ? 14 : 16} fontWeight="medium" lineLimit={3}
-      foregroundStyle={small ? onBlue.primary : color.primary}>{placeholder}</Text>
+      foregroundStyle={color.primary}>{placeholder}</Text>
   } else if (large) {
     summary = <VStack alignment="leading" spacing={0} padding={{ horizontal: 14, vertical: 9 }}
-      background={surface(color.blue, 15)}>
-      <Amount balance={balance} label={label} width={content - 28} large blue />
+      background={surface(color.panel, 15)}>
+      <Amount balance={balance} label={label} width={content - 28} large />
     </VStack>
   } else {
-    summary = <Amount balance={balance} label={label} width={content} blue={small} />
+    summary = <Amount balance={balance} label={label} width={content} />
   }
 
-  return <VStack spacing={0} widgetBackground={small ? color.blue : color.background} foregroundStyle={color.primary}
+  return <VStack spacing={0} widgetBackground={color.background} foregroundStyle={color.primary}
     widgetURL={managementURL} frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
     <VStack alignment="leading" spacing={0} padding={inset} frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
       <Header currency={currency} small={small} />
