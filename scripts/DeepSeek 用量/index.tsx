@@ -1,7 +1,6 @@
-import { Button, Dialog, HStack, Link, List, Navigation, NavigationStack, ProgressView, Script, Section, SecureField, Spacer, Text, VStack, Widget, useEffect, useState } from "scripting"
-import { BalanceView, KEYS_URL, displayedCurrency, mark, stamp, widgetAmount } from "./balance"
+import { Button, Dialog, HStack, List, Navigation, NavigationStack, ProgressView, Script, Section, SecureField, Spacer, Text, VStack, Widget, useEffect, useState } from "scripting"
+import { displayedCurrency, mark, stamp, widgetAmount } from "./balance"
 import { PlatformView, currentPlatform, loadPlatform, removePlatformToken, savePlatformToken } from "./platform"
-import { currentBalance, loadBalance, removeKey, saveKey } from "./service"
 import { Money, costText, hitRate, modelDetails, periodOf } from "./usage"
 
 const widgetPreviews = [
@@ -10,9 +9,9 @@ const widgetPreviews = [
   { family: "systemLarge", label: "大号" },
 ] as const
 
-function readLocal(read: () => BalanceView): BalanceView {
+function readLocal(): PlatformView {
   try {
-    return read()
+    return currentPlatform()
   } catch {
     return { configured: false, issue: { message: "本机配置无法读取，请确认设备已解锁", retryAt: 0 } }
   }
@@ -50,15 +49,12 @@ function PlatformDetails({ view }: { view: PlatformView }) {
   </>
 }
 
-function Main({ initial, initialPlatform }: { initial: BalanceView; initialPlatform: PlatformView }) {
+function Main({ initial }: { initial: PlatformView }) {
   const dismiss = Navigation.useDismiss()
-  const [balance, setBalance] = useState(initial)
-  const [platform, setPlatform] = useState(initialPlatform)
-  const [key, setKey] = useState("")
+  const [platform, setPlatform] = useState(initial)
   const [token, setToken] = useState("")
   const [working, setWorking] = useState<string | null>(null)
-  const view = platform.configured ? platform : balance
-  const latest = view.latest
+  const latest = platform.latest
   const primaryCurrency = displayedCurrency(latest)
   const primary = latest?.balances.find(item => item.currency === primaryCurrency)
 
@@ -74,33 +70,12 @@ function Main({ initial, initialPlatform }: { initial: BalanceView; initialPlatf
   }
 
   async function refresh(force = false) {
-    if (platform.configured) setPlatform(await loadPlatform(force))
-    else setBalance(await loadBalance(force))
+    setPlatform(await loadPlatform(force))
   }
 
   useEffect(() => {
-    if (view.configured) void update(() => refresh(), "正在查询 DeepSeek")
+    if (platform.configured) void update(() => refresh(), "正在查询 DeepSeek")
   }, [])
-
-  function save() {
-    return update(async () => {
-      setBalance(await saveKey(key))
-      setKey("")
-    }, "正在验证 API Key", true)
-  }
-
-  async function remove() {
-    if (!await Dialog.confirm({
-      title: "清除本机 API Key？",
-      message: "本机保存的 API Key 和对应余额缓存会一并清除。",
-      confirmLabel: "清除",
-      cancelLabel: "取消",
-    })) return
-    return update(async () => {
-      setBalance(removeKey())
-      setKey("")
-    }, "正在清除 API Key", true)
-  }
 
   function saveToken() {
     return update(async () => {
@@ -119,32 +94,26 @@ function Main({ initial, initialPlatform }: { initial: BalanceView; initialPlatf
     return update(async () => {
       setPlatform(removePlatformToken())
       setToken("")
-      setBalance(await loadBalance())
     }, "正在清除平台登录凭据", true)
-  }
-
-  function balanceText(raw: string, code: Parameters<typeof mark>[0]): string {
-    return mark(code) + (platform.configured ? widgetAmount(raw) : raw)
   }
 
   return <NavigationStack>
     <List navigationTitle="DeepSeek 用量" listStyle="insetGrouped"
       toolbar={{ cancellationAction: <Button title="关闭" action={dismiss} /> }}>
-      <Section header={<Text>{platform.configured ? "开放平台账户" : "API 账户余额"}</Text>}
+      <Section header={<Text>开放平台账户</Text>}
         footer={<Text>更新时间使用北京时间。</Text>}>
         {latest ? <>
-          {!platform.configured ? <Detail label="账户状态" value={latest.available ? "余额可用" : "余额不可用"} /> : null}
-          {primary ? <Detail label="可用总余额" value={balanceText(primary.total, primary.currency)} /> : null}
+          {primary ? <Detail label="可用总余额" value={mark(primary.currency) + widgetAmount(primary.total)} /> : null}
           <Detail label="余额更新于" value={stamp(latest.at)} />
           {latest.balances.length === 0 ? <Text foregroundStyle="secondaryLabel">接口未返回余额明细。</Text> : null}
         </> : <Text foregroundStyle="secondaryLabel">
-          {view.configured ? "等待余额数据" : "配置开放平台 userToken，或添加 API Key 查看余额。"}
+          {platform.configured ? "等待余额数据" : "请配置开放平台 userToken 查看余额和用量。"}
         </Text>}
-        {view.issue ? <Text font="caption" foregroundStyle="secondaryLabel">{view.issue.message}
-          {latest ? " · 可能显示缓存" : ""}{view.issue.retryAt > Date.now() ? ` · ${stamp(view.issue.retryAt)} 后可重试` : ""}
+        {platform.issue ? <Text font="caption" foregroundStyle="secondaryLabel">{platform.issue.message}
+          {latest ? " · 可能显示缓存" : ""}{platform.issue.retryAt > Date.now() ? ` · ${stamp(platform.issue.retryAt)} 后可重试` : ""}
         </Text> : null}
         {working ? <HStack spacing={8}><ProgressView /><Text>{working}</Text></HStack> : null}
-        <Button title={platform.configured ? "刷新余额与用量" : "刷新余额"} systemImage="arrow.clockwise" disabled={!view.configured || !!working}
+        <Button title="刷新余额与用量" systemImage="arrow.clockwise" disabled={!platform.configured || !!working}
           action={() => update(() => refresh(true), "正在查询 DeepSeek", true)} />
       </Section>
       {platform.configured ? <PlatformDetails view={platform} /> : null}
@@ -152,17 +121,9 @@ function Main({ initial, initialPlatform }: { initial: BalanceView; initialPlatf
         footer={<Text>启用后，小组件显示该平台账号的余额与本月用量。userToken 保存在本机 Keychain。</Text>}>
         <SecureField title="userToken" value={token} onChanged={setToken}
           prompt={platform.configured ? "已配置 · 可粘贴新凭据" : "粘贴开放平台登录 userToken"} />
-        <Button title={platform.configured ? "验证并更新平台凭据" : "验证并启用平台用量"}
+        <Button title={platform.configured ? "验证并更新" : "验证并保存"}
           disabled={!token.trim() || !!working} action={saveToken} />
         {platform.configured ? <Button title="清除本机平台登录凭据" role="destructive" disabled={!!working} action={removeToken} /> : null}
-        {initialPlatform.issue && !platform.configured ? <Text font="caption">{initialPlatform.issue.message}</Text> : null}
-      </Section>
-      <Section header={<Text>API Key</Text>} footer={<Text>API Key 用于余额模式，凭据保存在本机 Keychain。</Text>}>
-        <SecureField title="API Key" value={key} onChanged={setKey}
-          prompt={balance.configured ? "已配置 · 可粘贴新 Key" : "粘贴 DeepSeek API Key"} />
-        <Button title={balance.configured ? "验证并更新" : "验证并保存"} disabled={!key.trim() || !!working} action={save} />
-        <Link url={KEYS_URL}>前往 DeepSeek 管理 API Key</Link>
-        {balance.configured ? <Button title="清除本机 API Key" role="destructive" disabled={!!working} action={remove} /> : null}
       </Section>
       <Section header={<Text>小组件预览</Text>}>
         {widgetPreviews.map(item => <Button key={item.family} title={item.label}
@@ -174,7 +135,7 @@ function Main({ initial, initialPlatform }: { initial: BalanceView; initialPlatf
 
 async function run() {
   try {
-    await Navigation.present({ element: <Main initial={readLocal(currentBalance)} initialPlatform={readLocal(currentPlatform)} /> })
+    await Navigation.present({ element: <Main initial={readLocal()} /> })
   } finally { Script.exit() }
 }
 

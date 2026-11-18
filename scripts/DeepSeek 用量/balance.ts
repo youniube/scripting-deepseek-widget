@@ -18,47 +18,9 @@ export interface Issue {
   retryAt: number
 }
 
-export interface BalanceView {
-  configured: boolean
-  latest?: Snapshot
-  issue?: Issue
-}
-
 export const USAGE_URL = "https://platform.deepseek.com/usage"
-export const KEYS_URL = "https://platform.deepseek.com/api_keys"
 export const REFRESH_INTERVAL = 30 * 60 * 1000
 const BEIJING_OFFSET = 8 * 60 * 60 * 1000
-
-function record(value: unknown): Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) throw invalidResponse()
-  return value as Record<string, unknown>
-}
-
-function invalidResponse() {
-  return new Error("DeepSeek 返回的余额数据格式有误")
-}
-
-function amount(value: unknown): string {
-  if (typeof value !== "string" || !/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(value) || !Number.isFinite(Number(value))) {
-    throw invalidResponse()
-  }
-  return value
-}
-
-export function parseSnapshot(payload: unknown, at = Date.now()): Snapshot {
-  const body = record(payload)
-  if (typeof body.is_available !== "boolean" || !Array.isArray(body.balance_infos)) throw invalidResponse()
-
-  const seen = new Set<Currency>()
-  const balances = body.balance_infos.map((entry: unknown): Balance => {
-    const row = record(entry)
-    const currency = row.currency
-    if ((currency !== "CNY" && currency !== "USD") || seen.has(currency)) throw invalidResponse()
-    seen.add(currency)
-    return { currency, total: amount(row.total_balance), granted: amount(row.granted_balance), toppedUp: amount(row.topped_up_balance) }
-  })
-  return { at, available: body.is_available, balances }
-}
 
 export function currencyParameter(parameter: string | null | undefined): Currency | undefined {
   const value = parameter?.trim().toUpperCase()
@@ -101,9 +63,4 @@ export function retryAfter(header: string | null, now: number): number {
   const delay = /^\d+$/.test(value) ? Number(value) * 1000 : Date.parse(value) - now
   if (!Number.isFinite(delay)) return now + 5 * 60 * 1000
   return now + Math.min(24 * 60 * 60 * 1000, Math.max(60_000, delay))
-}
-
-export function nextRefresh(view: BalanceView, now = Date.now()): Date {
-  const next = view.issue?.retryAt ?? (view.latest?.at ?? now) + REFRESH_INTERVAL
-  return new Date(Math.max(now + 60_000, next))
 }

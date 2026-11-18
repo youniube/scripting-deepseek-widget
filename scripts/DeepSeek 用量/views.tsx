@@ -1,6 +1,5 @@
-import { Circle, HStack, Image, RoundedRectangle, Script, Spacer, Text, VStack, ZStack } from "scripting"
-import { Balance, BalanceView, Currency, REFRESH_INTERVAL, displayedCurrency, mark, stamp, widgetAmount } from "./balance"
-
+import { HStack, Image, RoundedRectangle, Script, Spacer, Text, VStack, ZStack } from "scripting"
+import { Balance, Currency, REFRESH_INTERVAL, displayedCurrency, mark, stamp, widgetAmount } from "./balance"
 import { PlatformView } from "./platform"
 import { compactTokens, costText, hitRate, modelDetails, modelLabel, periodOf } from "./usage"
 
@@ -35,8 +34,8 @@ function Rule({ width }: { width: number }) {
     frame={{ width, height: 1 }} />
 }
 
-function Header({ currency, small, period, detail, alert = false, compact = false }: {
-  currency?: Currency; small: boolean; period?: string; detail?: string; alert?: boolean; compact?: boolean
+function Header({ period, detail, alert = false, compact = false }: {
+  period?: string; detail?: string; alert?: boolean; compact?: boolean
 }) {
   const size = compact ? 22 : 27
   return <HStack spacing={8} frame={{ height: size }}>
@@ -50,46 +49,26 @@ function Header({ currency, small, period, detail, alert = false, compact = fals
     <Spacer />
     {detail ? <Text font={9} foregroundStyle={alert ? color.warning : color.secondary}
       lineLimit={1} minScaleFactor={0.8} monospacedDigit>{detail}</Text> : null}
-    {(period ?? currency) && !small ? <Text font={10} fontWeight="semibold" kerning={0.65} lineLimit={1}
-      foregroundStyle={color.accent} padding={{ horizontal: 8, vertical: 3 }} background={surface(color.subtle, 7)}>{period ?? currency}</Text> : null}
+    {period ? <Text font={10} fontWeight="semibold" kerning={0.65} lineLimit={1}
+      foregroundStyle={color.accent} padding={{ horizontal: 8, vertical: 3 }} background={surface(color.subtle, 7)}>{period}</Text> : null}
   </HStack>
 }
 
-function Amount({ balance, label, width, large = false }: {
-  balance?: Balance; label?: string; width: number; large?: boolean
+function Amount({ balance, label, width }: {
+  balance?: Balance; label?: string; width: number
 }) {
   const value = balance ? widgetAmount(balance.total) : "—"
   const valueWidth = width - (balance ? 21 : 0)
-  const font = Math.min(large ? 49 : 35, Math.max(21, Math.floor(valueWidth / (value.length * 0.61))))
-  const height = large ? 55 : 38
+  const font = Math.min(35, Math.max(21, Math.floor(valueWidth / (value.length * 0.61))))
   return <VStack alignment="leading" spacing={1} frame={{ width, alignment: "leading" }}>
     {label ? <Text font={12} fontWeight="medium" foregroundStyle={color.secondary} lineLimit={1}
       frame={{ width, height: 16, alignment: "leading" }}>{label}</Text> : null}
-    <HStack alignment="firstTextBaseline" spacing={5} frame={{ width, height, alignment: "leading" }}>
-      {balance ? <Text font={large ? 20 : 15} fontWeight="semibold" foregroundStyle={color.accent}
+    <HStack alignment="firstTextBaseline" spacing={5} frame={{ width, height: 38, alignment: "leading" }}>
+      {balance ? <Text font={15} fontWeight="semibold" foregroundStyle={color.accent}
         frame={{ width: 16, alignment: "leading" }}>{mark(balance.currency)}</Text> : null}
       <Text font={font} fontWeight="bold" fontDesign="rounded" monospacedDigit lineLimit={1} minScaleFactor={0.85}
         foregroundStyle={color.primary} fixedSize={{ horizontal: false, vertical: true }}
         frame={{ width: valueWidth, alignment: "leading" }}>{value}</Text>
-    </HStack>
-  </VStack>
-}
-
-function Footer({ view, small, now, width }: { view: BalanceView; small: boolean; now: number; width: number }) {
-  const latest = view.latest
-  if (!latest) return null
-  const stale = !!view.issue || now - latest.at > REFRESH_INTERVAL * 2
-  const status = stale ? "缓存" : latest.available ? "余额可用" : "余额不可用"
-  const statusColor = stale || !latest.available ? color.warning : color.success
-  return <VStack spacing={4}>
-    <Rule width={width} />
-    <HStack spacing={4} frame={{ width, height: 15 }}>
-      <Circle fill={statusColor} frame={{ width: 4, height: 4 }} />
-      <Text font={11} fontWeight="medium" lineLimit={1} foregroundStyle={statusColor}>{status}</Text>
-      <Spacer />
-      <Text font={11} foregroundStyle={color.secondary} lineLimit={1} monospacedDigit>
-        {stamp(latest.at, small && !stale)}
-      </Text>
     </HStack>
   </VStack>
 }
@@ -125,7 +104,7 @@ function ModelRow({ rows, currency, width, compact }: {
   </HStack>
 }
 
-function PlatformWidget({ platform, selection, family, width, now }: {
+export function DeepSeekWidget({ platform, selection, family, width, now }: {
   platform: PlatformView; selection?: Currency; family: string; width: number; now: number
 }) {
   const small = family === "systemSmall"
@@ -148,7 +127,8 @@ function PlatformWidget({ platform, selection, family, width, now }: {
   const updated = platform.dataAt ?? platform.latest?.at
   const hour = updated != null ? stamp(updated, !large || !!status) : ""
   const headerDetail = [status, hour].filter(Boolean).join(" · ")
-  const issueLabel = platform.issue?.message ?? "等待开放平台数据"
+  const placeholder = platform.issue?.message ??
+    (platform.configured ? "等待开放平台数据" : "请先运行脚本，配置开放平台登录凭据")
   const tiles = [
     { title: "月费用", value: costText(costs, costCurrency, 4), tone: color.accent },
     { title: "Tokens", value: compactTokens(amount?.tokens), tone: color.success },
@@ -175,11 +155,11 @@ function PlatformWidget({ platform, selection, family, width, now }: {
     <VStack alignment="leading" spacing={sectionSpacing}
       padding={{ horizontal: inset, vertical: small ? 12 : large ? 14 : 8 }}
       frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
-      <Header small={small} period={small ? undefined : when} compact={!small && !large}
+      <Header period={small ? undefined : when} compact={!small && !large}
         detail={!small && hasData ? headerDetail : undefined} alert={!!status} />
       {!hasData ? <>
         <Spacer />
-        <Text font={13} foregroundStyle={color.primary} lineLimit={2}>{issueLabel}</Text>
+        <Text font={13} foregroundStyle={color.primary} lineLimit={2}>{placeholder}</Text>
         <Spacer />
       </> : small ? <>
         <Spacer />
@@ -209,46 +189,6 @@ function PlatformWidget({ platform, selection, family, width, now }: {
         </Text>}
         {large && used.length <= 2 ? <Spacer /> : null}
       </>}
-    </VStack>
-  </VStack>
-}
-
-export function DeepSeekWidget({ view, platform, selection, family, width, now }: {
-  view: BalanceView; platform?: PlatformView; selection?: Currency; family: string; width: number; now: number
-}) {
-  if (platform?.configured) return <PlatformWidget platform={platform} selection={selection} family={family} width={width} now={now} />
-  const small = family === "systemSmall"
-  const large = family === "systemLarge"
-  const inset = small ? 12 : 14
-  const content = Math.floor(width) - inset * 2
-  const latest = view.latest
-  const currency = displayedCurrency(latest, selection)
-  const balance = latest?.balances.find(item => item.currency === currency)
-  const managementURL = Script.createRunURLScheme(Script.name)
-  const label = balance ? (small ? "API 余额" : "API 账户余额") : currency ? `暂无 ${currency} 余额` : "暂无余额明细"
-  const placeholder = view.issue?.message ?? (view.configured ? "等待余额数据" : "请先运行脚本，添加 API Key")
-
-  let summary
-  if (!latest) {
-    summary = <Text font={small ? 14 : 16} fontWeight="medium" lineLimit={3}
-      foregroundStyle={color.primary}>{placeholder}</Text>
-  } else if (large) {
-    summary = <VStack alignment="leading" spacing={0} padding={{ horizontal: 14, vertical: 9 }}
-      background={surface(color.panel, 15)}>
-      <Amount balance={balance} label={label} width={content - 28} large />
-    </VStack>
-  } else {
-    summary = <Amount balance={balance} label={label} width={content} />
-  }
-
-  return <VStack spacing={0} widgetBackground={color.background} foregroundStyle={color.primary}
-    widgetURL={managementURL} frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
-    <VStack alignment="leading" spacing={0} padding={inset} frame={{ maxWidth: "infinity", maxHeight: "infinity" }}>
-      <Header currency={currency} small={small} />
-      <Spacer />
-      {summary}
-      <Spacer />
-      <Footer view={view} small={small} now={now} width={content} />
     </VStack>
   </VStack>
 }

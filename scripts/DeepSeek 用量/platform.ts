@@ -1,5 +1,5 @@
 import { fetch } from "scripting"
-import { BalanceView, Issue, REFRESH_INTERVAL, USAGE_URL, retryAfter } from "./balance"
+import { Issue, REFRESH_INTERVAL, Snapshot, USAGE_URL, retryAfter } from "./balance"
 import { MonthlyAmount, MonthlyCost, object, parseMonthlyAmount, parseMonthlyCost, parsePlatformBalance, periodOf } from "./usage"
 
 const ORIGIN = "https://platform.deepseek.com"
@@ -7,7 +7,10 @@ const KEY = "deepseek-usage.v1.platform-token"
 const PREFIX = "deepseek-usage.v1.platform-cache."
 const access = { synchronizable: false, accessibility: "first_unlock_this_device" } as const
 
-export interface PlatformView extends BalanceView {
+export interface PlatformView {
+  configured: boolean
+  latest?: Snapshot
+  issue?: Issue
   checkedAt?: number
   dataAt?: number
   amount?: MonthlyAmount
@@ -130,7 +133,7 @@ async function query(token: string): Promise<Cache> {
 export async function savePlatformToken(input: string): Promise<PlatformView> {
   const token = input.trim()
   if (!token || /\s/.test(token)) throw new Error("请填写完整的单行开放平台 userToken")
-  if (token.startsWith("sk-")) throw new Error("这里需要网页登录 userToken。API Key 请在下方填写")
+  if (token.startsWith("sk-")) throw new Error("这里需要网页登录的 userToken，请从开放平台网页获取")
   const previous = login()
   const result = await query(token)
   if (!result.latest && !result.amount && !result.cost) throw new Error(result.issue?.message ?? "开放平台暂未返回数据")
