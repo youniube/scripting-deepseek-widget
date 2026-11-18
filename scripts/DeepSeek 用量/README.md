@@ -12,8 +12,8 @@
 
 ## 安装或更新
 
-1. 将 `DeepSeek 用量.zip` 保存到 iPhone 的「文件」App，然后用 Scripting 的文件导入功能打开。
-2. 也可以解压，把项目内的源码 `index.tsx`、`widget.tsx`、`views.tsx`、`balance.ts`、`service.ts`、`usage.ts` 以及 `platform.ts` 和图片 `deepseek-logo.png` 放到 Scripting 的同一脚本项目根目录。已安装旧版时可更新原项目，已有 API Key 继续可用。
+1. 在 iPhone 的 Safari 打开 [一键远程安装](https://www.scripting.fun/import_scripts/?urls=%5B%22https%3A%2F%2Fgithub.com%2Fyouniube%2Fscripting-deepseek-widget%2Ftree%2Fmain%2Fscripts%2FDeepSeek%2520%25E7%2594%25A8%25E9%2587%258F%22%5D)，在 Scripting 中确认导入。
+2. 如果已经安装，打开原脚本的设置，在「远程资源」中填入 [GitHub 脚本目录](https://github.com/youniube/scripting-deepseek-widget/tree/main/scripts/DeepSeek%20%E7%94%A8%E9%87%8F) 的地址，再在 App 内检查更新。
 3. 运行 **DeepSeek 用量**，完成下方一项配置，再把 Scripting 小组件添加到主屏幕并选中此项目。Parameter 留空自动选择币种，也可填 `CNY` 或 `USD` 固定币种。固定币种时月费用同样按该币种显示。
 
 ## 配置数据来源

@@ -4,6 +4,20 @@
 
 配置 DeepSeek 开放平台凭据后，中号和大号会显示月费用、Tokens、请求数、缓存命中率和模型明细。仅配置 API Key 时，可以查看账户余额。
 
+## 远程安装与更新
+
+**[在 iPhone 上打开 Scripting 安装](https://www.scripting.fun/import_scripts/?urls=%5B%22https%3A%2F%2Fgithub.com%2Fyouniube%2Fscripting-deepseek-widget%2Ftree%2Fmain%2Fscripts%2FDeepSeek%2520%25E7%2594%25A8%25E9%2587%258F%22%5D)**
+
+首次安装时，用 Safari 打开链接，在 Scripting 里确认导入。运行 **DeepSeek 用量**，配置数据来源，再把 Scripting 小组件添加到主屏幕并选中此脚本。
+
+在原脚本的设置里打开 **远程资源**，填写或核对下面的订阅地址，再在 App 内检查更新。需要自动更新时，可设置检查间隔并开启 App 的自动更新。
+
+```text
+https://github.com/youniube/scripting-deepseek-widget/tree/main/scripts/DeepSeek%20%E7%94%A8%E9%87%8F
+```
+
+[查看配置方法和数据说明](scripts/DeepSeek%20%E7%94%A8%E9%87%8F/README.md) · [Scripting 远程来源说明](https://scriptingapp.github.io/guide/Script/Script#remote-script-sources-and-updates)
+
 ## 预览
 
 预览根据组件界面生成，使用模拟数据。
@@ -19,9 +33,3 @@
 ### 大号
 
 <img src="docs/previews/large.png" width="704" alt="大号组件的浅色和深色预览，显示余额、四项月度指标和四项模型明细">
-
-## 安装
-
-在 GitHub 选择 **Code → Download ZIP**，解压后，将 `scripts/DeepSeek 用量` 目录里的项目文件放入 Scripting 的同一个脚本项目。运行脚本完成配置，再把 Scripting 小组件添加到主屏幕并选中 **DeepSeek 用量**。
-
-[查看配置方法和数据说明](scripts/DeepSeek%20%E7%94%A8%E9%87%8F/README.md)
